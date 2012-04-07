@@ -1,7 +1,7 @@
 module Reactive.Banana.SDL ( EventSource, SDLEventSource, WrappedEvent, TickEvent
                            , addHandler, fire, getSDLEventSource, sdlEvent
                            , tickEvent, keyEvent, mouseEvent, mouseButtonEvent
-                           , filterEq, runSDLPump, runCappedSDLPump, fpsEvent ) where
+                           , filterEq, runSDLPump, runCappedSDLPump ) where
 
 import Control.Monad
 import Reactive.Banana as R
@@ -13,8 +13,7 @@ type EventSource a = (AddHandler a, a -> IO ())
 type WrappedEvent t = R.Event t SDL.Event
 type TickEvent t = R.Event t Word32
 data SDLEventSource = SDLEventSource { getSDLEvent :: EventSource SDL.Event
-                                     , getTickEvent :: EventSource Word32
-                                     , getFPSEvent :: EventSource Word32 }
+                                     , getTickEvent :: EventSource Word32 }
 
 addHandler :: EventSource a -> AddHandler a
 addHandler = fst
@@ -23,16 +22,13 @@ fire :: EventSource a -> a -> IO ()
 fire = snd
 
 getSDLEventSource :: IO SDLEventSource
-getSDLEventSource = SDLEventSource <$> newAddHandler <*> newAddHandler <*> newAddHandler
+getSDLEventSource = SDLEventSource <$> newAddHandler <*> newAddHandler
 
 sdlEvent :: SDLEventSource -> NetworkDescription t (WrappedEvent t)
 sdlEvent = fromAddHandler . addHandler . getSDLEvent
 
 tickEvent :: SDLEventSource -> NetworkDescription t (TickEvent t)
 tickEvent = fromAddHandler . addHandler . getTickEvent
-
-fpsEvent :: SDLEventSource -> NetworkDescription t (TickEvent t)
-fpsEvent = fromAddHandler . addHandler . getFPSEvent
 
 keyEvent :: WrappedEvent t -> WrappedEvent t
 keyEvent = filterE isKey
@@ -79,13 +75,7 @@ mainSDLPump es = do
 
 runSDLPump :: SDLEventSource -> IO ()
 runSDLPump es = do
-    startTick <- SdlTime.getTicks
     c <- mainSDLPump es
-    endTick <- SdlTime.getTicks
-    let ticks = fromIntegral (endTick - startTick)
-        fps = 1000 `div` (max ticks 1)
-        efps = getFPSEvent es
-    fire efps fps
     if c then runSDLPump es else return ()
 
 runCappedSDLPump :: Int -> SDLEventSource -> IO ()
@@ -95,9 +85,6 @@ runCappedSDLPump rate es = do
     endTick <- SdlTime.getTicks
     let ticks = fromIntegral (endTick - startTick)
         secsPerFrame = fromIntegral (1000 `div` rate)
-        fps = min (1000 `div` (max ticks 1)) (fromIntegral rate)
-        efps = getFPSEvent es
-    fire efps fps
     when (ticks < secsPerFrame) $ do
         delay $ secsPerFrame - ticks
     if c then runCappedSDLPump rate es else return ()
