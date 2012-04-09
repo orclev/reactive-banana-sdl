@@ -10,9 +10,9 @@ import qualified Graphics.UI.SDL.Time as SdlTime
 import Data.Word
 
 type EventSource a = (AddHandler a, a -> IO ())
-type WrappedEvent t = R.Event t SDL.Event
+type WrappedEvent t = R.Event t [SDL.Event]
 type TickEvent t = R.Event t Word32
-data SDLEventSource = SDLEventSource { getSDLEvent :: EventSource SDL.Event
+data SDLEventSource = SDLEventSource { getSDLEvent :: EventSource [SDL.Event]
                                      , getTickEvent :: EventSource Word32 }
 
 addHandler :: EventSource a -> AddHandler a
@@ -31,7 +31,7 @@ tickEvent :: SDLEventSource -> NetworkDescription t (TickEvent t)
 tickEvent = fromAddHandler . addHandler . getTickEvent
 
 keyEvent :: WrappedEvent t -> WrappedEvent t
-keyEvent = filterE isKey
+keyEvent = collect . filterE isKey . spill
     where
         isKey e = case e of
             KeyUp _ -> True
@@ -41,13 +41,13 @@ keyEvent = filterE isKey
 mouseEvent :: WrappedEvent t -> WrappedEvent t
 mouseEvent esdl = mouseMotion `union` mouseButtonEvent esdl
     where
-        mouseMotion = filterE isMotion esdl
+        mouseMotion = collect . filterE isMotion $ spill esdl
         isMotion e = case e of
             MouseMotion _ _ _ _ -> True
             otherwise -> False
 
 mouseButtonEvent :: WrappedEvent t -> WrappedEvent t
-mouseButtonEvent = filterE isButton
+mouseButtonEvent = collect . filterE isButton . spill
     where
         isButton e = case e of
             MouseButtonDown _ _ _ -> True
@@ -64,19 +64,28 @@ mainSDLPump :: SDLEventSource -> IO Bool
 mainSDLPump es = do
     let esdl = getSDLEvent es
         etick = getTickEvent es
-    e <- pollEvent
     tick <- SdlTime.getTicks
-    case e of
-        Quit -> return False
-        otherwise -> do
+    me <- collectEvents
+    case me of
+        Nothing -> return False
+        Just e -> do
             fire esdl e
             fire etick tick
             return True
 
+collectEvents :: IO (Maybe [SDL.Event])
+collectEvents = do
+    e <- pollEvent
+    case e of
+        Quit -> return Nothing
+        NoEvent -> return (Just [])
+        otherwise -> collectEvents >>= return . (liftM (e:))
+
 runSDLPump :: SDLEventSource -> IO ()
-runSDLPump es = do
-    c <- mainSDLPump es
-    if c then runSDLPump es else return ()
+runSDLPump es = whileM (mainSDLPump es)
+
+whileM :: IO Bool -> IO ()
+whileM f = f >>= (\x -> if x then whileM f else return ())
 
 runCappedSDLPump :: Int -> SDLEventSource -> IO ()
 runCappedSDLPump rate es = do
