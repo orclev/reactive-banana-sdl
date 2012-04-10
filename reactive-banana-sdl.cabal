@@ -18,7 +18,9 @@ Cabal-version:       >=1.2
 
 Library
   hs-source-dirs:  src
-  Exposed-modules:  Reactive.Banana.SDL
+  Exposed-modules:  Reactive.Banana.SDL,
+                    Reactive.Banana.SDL.Types,
+                    Reactive.Banana.SDL.Util
 
   Build-depends:    base >= 4.2 && < 5,
                     reactive-banana >= 0.5.0.0 && < 0.6,
