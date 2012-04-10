@@ -22,7 +22,7 @@ tickEvent :: SDLEventSource -> NetworkDescription t (TickEvent t)
 tickEvent = fromAddHandler . addHandler . getTickEvent
 
 keyEvent :: WrappedEvent t -> WrappedEvent t
-keyEvent = collect .    filterE isKey . spill
+keyEvent = collect . filterE isKey . spill
     where
         isKey e = case e of
             KeyUp _ -> True
