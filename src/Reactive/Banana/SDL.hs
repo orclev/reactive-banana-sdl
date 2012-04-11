@@ -33,7 +33,7 @@ collectEvents = do
     case e of
         Quit -> return Nothing
         NoEvent -> return (Just [])
-        otherwise -> collectEvents >>= return . (liftM (e:))
+        otherwise -> liftM (liftM (e:)) collectEvents
 
 runSDLPump :: SDLEventSource -> IO ()
 runSDLPump es = whileM (mainSDLPump es)
@@ -45,6 +45,6 @@ runCappedSDLPump rate es = do
     endTick <- SdlTime.getTicks
     let ticks = fromIntegral (endTick - startTick)
         secsPerFrame = fromIntegral (1000 `div` rate)
-    when (ticks < secsPerFrame) $ do
+    when (ticks < secsPerFrame) $
         delay $ secsPerFrame - ticks
-    if c then runCappedSDLPump rate es else return ()
+    when c $ runCappedSDLPump rate es

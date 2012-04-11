@@ -5,9 +5,10 @@ module Reactive.Banana.SDL.Util ( addHandler, fire, sdlEvent, tickEvent
 import Reactive.Banana as R
 import Graphics.UI.SDL as SDL
 import Reactive.Banana.SDL.Types
+import Control.Monad (when)
 
 whileM :: IO Bool -> IO ()
-whileM f = f >>= (\x -> if x then whileM f else return ())
+whileM f = f >>= (\x -> when x $ whileM f )
 
 addHandler :: EventSource a -> AddHandler a
 addHandler = fst
@@ -34,15 +35,15 @@ mouseEvent esdl = mouseMotion `union` mouseButtonEvent esdl
     where
         mouseMotion = collect . filterE isMotion $ spill esdl
         isMotion e = case e of
-            MouseMotion _ _ _ _ -> True
+            MouseMotion {} -> True
             otherwise -> False
 
 mouseButtonEvent :: WrappedEvent t -> WrappedEvent t
 mouseButtonEvent = collect . filterE isButton . spill
     where
         isButton e = case e of
-            MouseButtonDown _ _ _ -> True
-            MouseButtonUp _ _ _ -> True
+            MouseButtonDown {} -> True
+            MouseButtonUp {} -> True
             otherwise -> False
 
 filterEq :: Eq a => R.Event t a -> R.Event t a

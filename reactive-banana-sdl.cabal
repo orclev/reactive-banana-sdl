@@ -1,7 +1,7 @@
 Name:                reactive-banana-sdl
 Version:             0.1.0
 Synopsis:            Reactive Banana bindings for SDL
--- Description:
+Description:         Provides bindings and convenience functions for using reactive banana with SDL.
 License:             GPL-3
 License-file:        LICENSE
 Author:              R. Kyle Murphy
@@ -10,10 +10,16 @@ Category:            Graphics
 Homepage:            https://github.com/orclev/reactive-banana-sdl
 Build-type:          Simple
 
+-- TODO
 -- Extra files to be distributed with the package, such as examples or
 -- a README.
 -- Extra-source-files:
-Cabal-version:       >=1.2
+Cabal-version:       >=1.6
+
+
+Source-Repository head
+    Type:            git
+    Location:        https://github.com/orclev/reactive-banana-sdl
 
 
 Library
@@ -25,6 +31,3 @@ Library
   Build-depends:    base >= 4.2 && < 5,
                     reactive-banana >= 0.5.0.0 && < 0.6,
                     SDL >= 0.6.3 && < 0.7
-
-  -- Modules not exported by this package.
-  -- Other-modules:
