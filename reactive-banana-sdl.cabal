@@ -26,8 +26,12 @@ Library
   hs-source-dirs:  src
   Exposed-modules:  Reactive.Banana.SDL,
                     Reactive.Banana.SDL.Types,
-                    Reactive.Banana.SDL.Util
+                    Reactive.Banana.SDL.Util,
+                    Reactive.Banana.SDL.Graphics,
+                    Reactive.Banana.SDL.Graphics.Types,
+                    Reactive.Banana.SDL.Graphics.Util
 
   Build-depends:    base >= 4.2 && < 5,
                     reactive-banana >= 0.5.0.0 && < 0.6,
-                    SDL >= 0.6.3 && < 0.7
+                    SDL >= 0.6.3 && < 0.7,
+                    SDL-ttf >= 0.6.1 && < 0.7
