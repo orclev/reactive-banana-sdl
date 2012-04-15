@@ -48,9 +48,9 @@ discard m = m >> return ()
 
 renderGraph :: Behavior t Graphic -> Behavior t Screen -> NetworkDescription t ()
 renderGraph bgraph bscreen = do
-    egraph <- changes bgraph
+    egraph <- changes $ render <$> bgraph
     reactimate $ flip paintGraphic <$> bscreen <@> egraph
 
 renderGraphOnEvent :: Behavior t Graphic -> Behavior t Screen -> R.Event t a -> NetworkDescription t ()
 renderGraphOnEvent bgraph bscreen event =
-    reactimate $ paintGraphic <$> bgraph <*> bscreen <@ event
+    reactimate $ paintGraphic <$> render <$> bgraph <*> bscreen <@ event
