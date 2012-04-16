@@ -8,6 +8,7 @@ import Graphics.UI.SDL as SDL hiding (flip)
 import qualified Graphics.UI.SDL as SDL (flip)
 import Graphics.UI.SDL.TTF
 import Data.Lens.Common
+--import Debug.Trace
 
 over :: Graphic -> Graphic -> Graphic
 (Graphic x) `over` (Graphic y) = Graphic $ \surface -> y surface >> x surface
@@ -32,7 +33,7 @@ instance Draw Widget Mask where
 
 renderWidget :: Widget -> Surface -> Mask -> IO ()
 renderWidget w dst mask = case w of
-    Over _ _ -> renderWidget (w ^. topItem) dst mask >> (discard $ renderWidget (w ^. bottomItem) dst mask)
+    Over _ _ -> renderWidget (w ^. bottomItem) dst mask >> (discard $ renderWidget (w ^. topItem) dst mask)
     Fill _ -> pixel dst >>= \c -> discard $ fillRect dst Nothing c
     Image _ _ -> discard $ blitSurface (w ^. imageData) (w ^. imageClip) dst offset
     Text _ _ _ -> discard $ blitText dst
@@ -43,7 +44,7 @@ renderWidget w dst mask = case w of
             freeSurface txt
         offset = Just $ Rect { rectX = maskX mask, rectY = maskY mask, rectW = 0, rectH = 0 }
         pixel dst = (mapRGB . surfaceGetPixelFormat) dst (colorRed color) (colorGreen color) (colorBlue color)
-        Fill color = w
+        color = w ^. fillColor
 
 discard :: IO a -> IO ()
 discard m = m >> return ()
