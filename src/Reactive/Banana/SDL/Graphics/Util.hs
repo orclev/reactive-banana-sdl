@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleInstances, MultiParamTypeClasses, TypeSynonymInstances #-}
+{-# LANGUAGE FlexibleInstances, MultiParamTypeClasses, TypeSynonymInstances, TemplateHaskell #-}
 module Reactive.Banana.SDL.Graphics.Util where
 
 import Reactive.Banana.SDL.Graphics.Types
@@ -7,6 +7,7 @@ import Reactive.Banana as R
 import Graphics.UI.SDL as SDL hiding (flip)
 import qualified Graphics.UI.SDL as SDL (flip)
 import Graphics.UI.SDL.TTF
+import Data.Lens.Common
 
 over :: Graphic -> Graphic -> Graphic
 (Graphic x) `over` (Graphic y) = Graphic $ \surface -> y surface >> x surface
@@ -26,22 +27,23 @@ instance Draw SDL.Surface Mask where
             clip = maskClip mask
             offset = Just $ Rect { rectX = maskX mask, rectY = maskY mask, rectW = 0, rectH = 0 }
 
-instance Draw Fill Mask where
-    draw fill mask = Graphic $ \dst -> pixel dst >>= \c -> discard $ fillRect dst clip c
-        where
-            pixel dst = (mapRGB . surfaceGetPixelFormat) dst (colorRed color) (colorGreen color) (colorBlue color)
-            clip = fillClip fill
-            color = fillColor fill
+instance Draw Widget Mask where
+    draw widget mask = Graphic $ \dst -> renderWidget widget dst mask
 
-instance Draw Text Mask where
-    draw text mask = Graphic $ \dst -> discard $ blitText dst
-        where
-            blitText dst = do
-                txt <- renderTextSolid (textFont text) (textMsg text) (textColor text)
-                blitSurface txt clip dst offset
-                freeSurface txt
-            clip = maskClip mask
-            offset = Just $ Rect { rectX = maskX mask, rectY = maskY mask, rectW = 0, rectH = 0 }
+renderWidget :: Widget -> Surface -> Mask -> IO ()
+renderWidget w dst mask = case w of
+    Over _ _ -> renderWidget (w ^. topItem) dst mask >> (discard $ renderWidget (w ^. bottomItem) dst mask)
+    Fill _ -> pixel dst >>= \c -> discard $ fillRect dst Nothing c
+    Image _ _ -> discard $ blitSurface (w ^. imageData) (w ^. imageClip) dst offset
+    Text _ _ _ -> discard $ blitText dst
+    where
+        blitText dst = do
+            txt <- renderTextSolid (w ^. textFont) (w ^. textMessage) (w ^. textColor)
+            blitSurface txt (maskClip mask) dst offset
+            freeSurface txt
+        offset = Just $ Rect { rectX = maskX mask, rectY = maskY mask, rectW = 0, rectH = 0 }
+        pixel dst = (mapRGB . surfaceGetPixelFormat) dst (colorRed color) (colorGreen color) (colorBlue color)
+        Fill color = w
 
 discard :: IO a -> IO ()
 discard m = m >> return ()
