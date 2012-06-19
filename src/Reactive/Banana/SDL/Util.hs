@@ -1,6 +1,8 @@
 module Reactive.Banana.SDL.Util ( addHandler, fire, sdlEvent, tickEvent
                                 , keyEvent, mouseEvent, mouseButtonEvent
-                                , filterEq, keyFilter, whileM ) where
+                                , filterEq, keyFilter, keyUpFilter
+                                , mouseEventWithin
+                                , whileM ) where
 
 import Reactive.Banana as R
 import Graphics.UI.SDL as SDL
@@ -46,6 +48,16 @@ mouseButtonEvent = collect . filterE isButton . spill
             MouseButtonUp {} -> True
             otherwise -> False
 
+mouseEventWithin :: Rect -> WrappedEvent t -> WrappedEvent t
+mouseEventWithin ~(Rect x y w h) = collect . filterE isWithin . spill
+    where
+        within mx' my' = let (mx, my) = (fromIntegral mx', fromIntegral my') in (mx >= x && mx <= x + w) && (my >= y && my <= y + h)
+        isWithin e = case e of
+            MouseMotion mx my _ _ -> within mx my
+            MouseButtonDown mx my _ -> within mx my
+            MouseButtonUp mx my _ -> within mx my
+            otherwise -> False
+
 filterEq :: Eq a => R.Event t a -> R.Event t a
 filterEq = filterJust . fst . mapAccum Nothing . fmap f
     where
@@ -55,3 +67,7 @@ filterEq = filterJust . fst . mapAccum Nothing . fmap f
 keyFilter :: SDL.SDLKey -> SDL.Event -> Bool
 keyFilter k (KeyDown (Keysym k' _ _)) | k == k' = True
 keyFilter _ _ = False
+
+keyUpFilter :: SDL.SDLKey -> SDL.Event -> Bool
+keyUpFilter k (KeyUp (Keysym k' _ _)) | k == k' = True
+keyUpFilter _ _ = False
