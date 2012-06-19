@@ -1,5 +1,5 @@
 Name:                reactive-banana-sdl
-Version:             0.1.0
+Version:             0.1.1
 Synopsis:            Reactive Banana bindings for SDL
 Description:         Provides bindings and convenience functions for using reactive banana with SDL.
 License:             GPL-3
@@ -32,7 +32,7 @@ Library
                     Reactive.Banana.SDL.Graphics.Util
 
   Build-depends:    base >= 4.2 && < 5,
-                    reactive-banana >= 0.5.0.0 && < 0.6,
+                    reactive-banana >= 0.5.0.0 && < 0.7,
                     SDL >= 0.6.3 && < 0.7,
                     SDL-ttf >= 0.6.1 && < 0.7,
                     data-lens >= 2.0.4 && < 2.1,
