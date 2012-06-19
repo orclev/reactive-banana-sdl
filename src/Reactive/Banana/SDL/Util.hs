@@ -1,8 +1,8 @@
 module Reactive.Banana.SDL.Util ( addHandler, fire, sdlEvent, tickEvent
                                 , keyEvent, mouseEvent, mouseButtonEvent
                                 , filterEq, keyFilter, keyUpFilter
-                                , mouseEventWithin
-                                , whileM ) where
+                                , mouseEventWithin, keyPressed
+                                , whileM, successive ) where
 
 import Reactive.Banana as R
 import Graphics.UI.SDL as SDL
@@ -71,3 +71,10 @@ keyFilter _ _ = False
 keyUpFilter :: SDL.SDLKey -> SDL.Event -> Bool
 keyUpFilter k (KeyUp (Keysym k' _ _)) | k == k' = True
 keyUpFilter _ _ = False
+
+successive :: (a -> a -> Maybe b) -> R.Event t a -> R.Event t b
+successive f e = filterJust (b <@> e)
+    where b = stepper (const Nothing) (f <$> e)
+
+keyPressed :: SDL.SDLKey -> WrappedEvent t -> WrappedEvent t
+keyPressed k = collect . successive (\p c -> if keyFilter k p && keyFilter k c then Just c else Nothing) . spill
