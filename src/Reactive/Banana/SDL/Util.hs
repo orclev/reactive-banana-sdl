@@ -26,7 +26,7 @@ tickEvent = fromAddHandler . addHandler . getTickEvent
 
 -- | event carrying the difference between the last two SDL ticks
 tickDiffEvent :: SDLEventSource -> NetworkDescription t (TickEvent t)
-tickDiffEvent =liftM (successive (\a b->Just (b-a))) . tickEvent
+tickDiffEvent =liftM (successive (\a b->if b>a then Just (b-a) else Nothing)) . tickEvent
  
 
 keyEvent :: WrappedEvent t -> WrappedEvent t
