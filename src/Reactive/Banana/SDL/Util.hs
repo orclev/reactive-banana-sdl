@@ -1,5 +1,5 @@
-module Reactive.Banana.SDL.Util ( addHandler, fire, sdlEvent, tickEvent
-                                , keyEvent, mouseEvent, mouseButtonEvent
+module Reactive.Banana.SDL.Util ( addHandler, fire, sdlEvent, tickEvent, tickDiffEvent
+                                , keyEvent, keyDownEvent, keyUpEvent, mouseEvent, mouseButtonEvent
                                 , filterEq, keyFilter, keyUpFilter
                                 , mouseEventWithin, keyPressed, buttonClick
                                 , whileM, successive ) where
@@ -7,7 +7,7 @@ module Reactive.Banana.SDL.Util ( addHandler, fire, sdlEvent, tickEvent
 import Reactive.Banana as R
 import Graphics.UI.SDL as SDL
 import Reactive.Banana.SDL.Types
-import Control.Monad (when)
+import Control.Monad (when,liftM)
 
 whileM :: IO Bool -> IO ()
 whileM f = f >>= (\x -> when x $ whileM f )
@@ -24,6 +24,11 @@ sdlEvent = fromAddHandler . addHandler . getSDLEvent
 tickEvent :: SDLEventSource -> NetworkDescription t (TickEvent t)
 tickEvent = fromAddHandler . addHandler . getTickEvent
 
+-- | event carrying the difference between the last two SDL ticks
+tickDiffEvent :: SDLEventSource -> NetworkDescription t (TickEvent t)
+tickDiffEvent =liftM (successive (\a b->if b>a then Just (b-a) else Nothing)) . tickEvent
+ 
+
 keyEvent :: WrappedEvent t -> WrappedEvent t
 keyEvent = collect . filterE isKey . spill
     where
@@ -31,6 +36,19 @@ keyEvent = collect . filterE isKey . spill
             KeyUp _ -> True
             KeyDown _ -> True
             otherwise -> False
+
+-- | event carrying the key pressed down 
+keyDownEvent :: WrappedEvent t -> R.Event t SDL.Keysym
+keyDownEvent= filterJust . (isDown <$>) . spill . keyEvent 
+        where isDown (SDL.KeyDown k)=Just k
+              isDown _ = Nothing
+
+-- | event carrying the key pressed up 
+keyUpEvent :: WrappedEvent t -> R.Event t SDL.Keysym
+keyUpEvent= filterJust . (isDown <$>) . spill . keyEvent 
+        where isDown (SDL.KeyUp k)=Just k
+              isDown _ = Nothing
+
 
 mouseEvent :: WrappedEvent t -> WrappedEvent t
 mouseEvent esdl = mouseMotion `union` mouseButtonEvent esdl
@@ -76,9 +94,9 @@ successive :: (a -> a -> Maybe b) -> R.Event t a -> R.Event t b
 successive f e = filterJust (b <@> e)
     where b = stepper (const Nothing) (f <$> e)
 
--- | Warning: This function needs some testing.
+-- | fires when the given key is pressed (down + up)
 keyPressed :: SDL.SDLKey -> WrappedEvent t -> WrappedEvent t
-keyPressed k = collect . successive (\p c -> if keyFilter k p && keyFilter k c then Just c else Nothing) . spill . keyEvent
+keyPressed k = collect . successive (\p c -> if keyFilter k p && keyUpFilter k c then Just c else Nothing) . spill . keyEvent
 
 buttonClick :: MouseButton -> WrappedEvent t -> WrappedEvent t
 buttonClick b = collect . successive sameButton . spill . mouseButtonEvent
